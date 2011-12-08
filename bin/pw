@@ -16,9 +16,11 @@ begin
   password = ask("Enter your master password: ") { |p| p.echo = false }
 
   length = 24
-  if ARGV[1] =~ /-L(\d+)/
-    length = $1.to_i
-    ARGV.delete_at 1
+  ARGV.each_with_index do |opt,idx|
+    if opt =~ /-L(\d+)/
+      length = $1.to_i
+      ARGV.delete_at idx
+    end
   end
 
   system "echo '#{[*ARGV[0..1], password].*(ROUNDS).inject { |a,b| Digest::HMAC.base64digest a, b, Digest::SHA512 }[0..(length-1)]}' | pbcopy"
