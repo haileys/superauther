@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+require "digest"
+require "digest/hmac"
+require "highline/import"
+require "paint"
+
+ROUNDS = 100
+
+begin
+  unless ARGV.any?
+    puts "Usage: pw <domain> [<username>] [-L<length>]"
+    puts "  Generates a secure password for <domain>, optionally tied to <username>"
+    exit
+  end
+
+  password = ask("Enter your master password: ") { |p| p.echo = false }
+
+  length = 24
+  if ARGV[1] =~ /-L(\d+)/
+    length = $1.to_i
+    ARGV.delete_at 1
+  end
+
+  system "echo '#{[*ARGV[0..1], password].*(ROUNDS).inject { |a,b| Digest::HMAC.base64digest a, b, Digest::SHA512 }[0..(length-1)]}' | pbcopy"
+  puts "Password copied to clipboard."
+
+  timer = 60
+  while timer >= 0
+    print "\r["
+    print Paint["#" * timer, case timer
+                             when 0..20;  :red
+                             when 20..40; :yellow
+                             when 40..60; :green
+                             end, :bright]
+    print " " * (70 - timer)
+    print "]"
+    timer -= 1
+    sleep 0.1
+  end
+  print "\r"
+  print " " * 72
+  print "\r"
+  system "echo '' | pbcopy"
+  puts "Clipboard cleared"
+rescue Interrupt
+  puts
+end
+
